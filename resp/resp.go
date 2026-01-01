@@ -38,7 +38,6 @@ func (r *Resp) Read() (Value, error) {
 		return Value{}, err
 	}
 
-	fmt.Println(string(_type), "Type to read")
 	switch _type {
 	case STRING:
 		return r.readString()
@@ -124,7 +123,6 @@ func (r *Resp) readBulk() (Value, error) {
 		return Value{}, err
 	}
 
-	fmt.Println("Read bulk ", string(bytes))
 	return Value{Type: BULK, Str: string(bytes)}, nil
 
 }
@@ -151,7 +149,6 @@ func (r *Resp) readArray() (Value, error) {
 		}
 		value.Array = append(value.Array, vl)
 	}
-	fmt.Println(value, "this is the read array value")
 	return value, nil
 }
 
@@ -166,7 +163,7 @@ func NewWriter(w io.Writer) *Writer {
 func (w *Writer) Write(v Value) error {
 	fmt.Println("Value received to write", v)
 	bytes := v.marshal()
-	fmt.Println("Hello")
+	fmt.Println("marshaled bytes")
 	fmt.Println(string(bytes))
 	_, err := w.writer.Write(bytes)
 	return err
@@ -225,13 +222,9 @@ func (v Value) marshalArray() []byte {
 
 	bytes = strconv.AppendInt(bytes, int64(len(v.Array)), 10)
 	bytes = append(bytes, '\r', '\n')
-	fmt.Println("This is the end ")
-	fmt.Println(string(bytes))
 	for _, val := range v.Array {
 		bytes = append(bytes, val.marshal()...)
 	}
-	fmt.Println("This is the edn ")
-	fmt.Println(string(bytes))
 	return bytes
 }
 
