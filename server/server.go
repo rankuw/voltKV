@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"strconv"
+	"time"
 
 	"github.com/rankuw/VoltKV/resp"
 	"github.com/rankuw/VoltKV/store"
@@ -102,7 +104,7 @@ func (s *Server) handleConnection(conn net.Conn) {
 		return
 
 	case "SET":
-		if len(arugments) != 2 {
+		if len(arugments) < 2 {
 			if err := writer.Write(resp.Value{Type: resp.ERROR, Str: "ERR wrong number of arugments for SET"}); err != nil {
 				fmt.Println(err)
 			}
@@ -111,7 +113,13 @@ func (s *Server) handleConnection(conn net.Conn) {
 		key := arugments[0].Bulk
 		val := arugments[1].Bulk
 
-		s.store.Set(key, val)
+		var ttl time.Duration
+		if len(arugments) >= 4 && arugments[2].Bulk == "EX" {
+			seconds, _ := strconv.Atoi(arugments[3].Bulk)
+			ttl = time.Duration(seconds) * time.Second
+		}
+
+		s.store.Set(key, val, ttl)
 		if err := writer.Write(resp.Value{Type: resp.STRING, Str: "OK"}); err != nil {
 			fmt.Println(err)
 		}

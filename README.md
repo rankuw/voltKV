@@ -13,8 +13,8 @@ VoltKV is a high-performance, in-memory key-value store written in Go. It mimics
 
 ### Phase 2: Storage Engine
 - [x] **In-Memory Store**: Thread-safe Hash Map (`sync.RWMutex`).
-- [ ] **Key Expiry**: Logic to TTL (Time To Live) for keys.
-g
+- [x] **Key Expiry**: Logic to TTL (Time To Live) for keys.
+
 ### Phase 3: Persistence
 - [ ] **AOF (Append-Only File)**: Log every write command to disk.
 - [ ] **Recovery**: Replay AOF on startup to restore state.
