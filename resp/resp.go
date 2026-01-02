@@ -16,11 +16,12 @@ const (
 )
 
 type Value struct {
-	Type  byte
-	Str   string
-	Num   int
-	Bulk  string
-	Array []Value
+	Type   byte
+	Str    string
+	Num    int
+	Bulk   string
+	Array  []Value
+	IsNull bool
 }
 
 type Resp struct {
@@ -116,14 +117,14 @@ func (r *Resp) readBulk() (Value, error) {
 		return Value{}, err
 	}
 
-	bytes := make([]byte, size)
+	bytes := make([]byte, size+2)
 	_, err = io.ReadFull(r.reader, bytes)
 
 	if err != nil {
 		return Value{}, err
 	}
 
-	return Value{Type: BULK, Str: string(bytes)}, nil
+	return Value{Type: BULK, Bulk: string(bytes[:len(bytes)-2])}, nil
 
 }
 
@@ -143,7 +144,6 @@ func (r *Resp) readArray() (Value, error) {
 	value := Value{Type: ARRAY}
 	for i := 0; i < ln; i++ {
 		vl, err := r.Read()
-
 		if err != nil {
 			return Value{}, err
 		}
@@ -208,9 +208,13 @@ func (v Value) marshalBulk() []byte {
 	var bytes []byte
 
 	bytes = append(bytes, BULK)
-	bytes = strconv.AppendInt(bytes, int64(len(v.Str)), 10)
+	if v.IsNull {
+		bytes = append(bytes, []byte("-1\r\n")...)
+		return bytes
+	}
+	bytes = strconv.AppendInt(bytes, int64(len(v.Bulk)), 10)
 	bytes = append(bytes, '\r', '\n')
-	bytes = append(bytes, v.Str...)
+	bytes = append(bytes, []byte(v.Bulk)...)
 	bytes = append(bytes, '\r', '\n')
 	return bytes
 }

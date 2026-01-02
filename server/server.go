@@ -6,12 +6,17 @@ import (
 	"net"
 
 	"github.com/rankuw/VoltKV/resp"
+	"github.com/rankuw/VoltKV/store"
 )
 
-type Server struct{}
+type Server struct {
+	store *store.Store
+}
 
-func NewServer() *Server {
-	return &Server{}
+func NewServer(store *store.Store) *Server {
+	return &Server{
+		store: store,
+	}
 }
 
 func (s *Server) ListenAndServe(address string) error {
@@ -64,12 +69,8 @@ func (s *Server) handleConnection(conn net.Conn) {
 		return
 	}
 
-	command := data.Array[0].Str
-	// arugments := data.Array[1:]
-
-	// fmt.Println(command, arugments, "HELLO")
-
-	fmt.Println("This is the command -> ", command)
+	command := data.Array[0].Bulk
+	arugments := data.Array[1:]
 
 	switch command {
 	case "PING":
@@ -79,14 +80,39 @@ func (s *Server) handleConnection(conn net.Conn) {
 		return
 
 	case "GET":
-		fmt.Println("here hu m.")
-		if err := writer.Write(resp.Value{Type: resp.STRING, Str: "GETRESPONSE"}); err != nil {
-			fmt.Println(err)
+		if len(arugments) != 1 {
+			if err := writer.Write(resp.Value{Type: resp.ERROR, Str: "ERR wrong number of arugments for GET"}); err != nil {
+				fmt.Println(err)
+			}
 		}
+
+		key := arugments[0].Bulk
+		val, ok := s.store.Get(key)
+
+		if !ok {
+			if err := writer.Write(resp.Value{Type: resp.BULK, IsNull: true}); err != nil {
+				fmt.Println(err)
+			}
+		} else {
+			if err := writer.Write(resp.Value{Type: resp.BULK, Bulk: val}); err != nil {
+				fmt.Println(err)
+			}
+		}
+
 		return
 
 	case "SET":
-		if err := writer.Write(resp.Value{Type: resp.STRING, Str: "SETRESPONSE"}); err != nil {
+		if len(arugments) != 2 {
+			if err := writer.Write(resp.Value{Type: resp.ERROR, Str: "ERR wrong number of arugments for SET"}); err != nil {
+				fmt.Println(err)
+			}
+		}
+
+		key := arugments[0].Bulk
+		val := arugments[1].Bulk
+
+		s.store.Set(key, val)
+		if err := writer.Write(resp.Value{Type: resp.STRING, Str: "OK"}); err != nil {
 			fmt.Println(err)
 		}
 		return
