@@ -162,14 +162,14 @@ func NewWriter(w io.Writer) *Writer {
 
 func (w *Writer) Write(v Value) error {
 	fmt.Println("Value received to write", v)
-	bytes := v.marshal()
+	bytes := v.Marshal()
 	fmt.Println("marshaled bytes")
 	fmt.Println(string(bytes))
 	_, err := w.writer.Write(bytes)
 	return err
 }
 
-func (v Value) marshal() []byte {
+func (v Value) Marshal() []byte {
 	switch v.Type {
 	case STRING:
 		return v.marshalString()
@@ -227,7 +227,7 @@ func (v Value) marshalArray() []byte {
 	bytes = strconv.AppendInt(bytes, int64(len(v.Array)), 10)
 	bytes = append(bytes, '\r', '\n')
 	for _, val := range v.Array {
-		bytes = append(bytes, val.marshal()...)
+		bytes = append(bytes, val.Marshal()...)
 	}
 	return bytes
 }
