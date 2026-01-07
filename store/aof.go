@@ -2,7 +2,6 @@ package store
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"os"
 	"strconv"
@@ -15,8 +14,9 @@ import (
 
 type Aof struct {
 	file *os.File
-	mu   sync.Mutex
 	rd   *bufio.Reader
+	mu   sync.Mutex
+	buf  *bufio.Writer
 }
 
 func NewAof(path string) (*Aof, error) {
@@ -29,13 +29,17 @@ func NewAof(path string) (*Aof, error) {
 	aof := &Aof{
 		file: f,
 		rd:   bufio.NewReader(f),
+		buf:  bufio.NewWriter(f),
 	}
 
 	go func(aof *Aof) {
-		aof.mu.Lock()
-		defer aof.mu.Unlock()
-		aof.file.Sync()
-		time.Sleep(time.Second)
+		for {
+			aof.mu.Lock()
+			aof.buf.Flush()
+			aof.file.Sync()
+			aof.mu.Unlock()
+			time.Sleep(time.Second)
+		}
 	}(aof)
 
 	return aof, nil
@@ -52,8 +56,7 @@ func (aof *Aof) Write(v resp.Value) error {
 	aof.mu.Lock()
 	defer aof.mu.Unlock()
 
-	fmt.Println(v, "This the the value to write")
-	_, err := aof.file.Write(v.Marshal())
+	_, err := aof.buf.Write(v.Marshal())
 
 	if err != nil {
 		return err
@@ -78,7 +81,6 @@ func (aof *Aof) LoadData(kv *Store) error {
 			return err
 		}
 
-		fmt.Println(value, "This is the value")
 		command := strings.ToUpper(value.Array[0].Bulk)
 		args := value.Array[1:]
 
@@ -104,7 +106,6 @@ func (aof *Aof) LoadData(kv *Store) error {
 			kv.Set(key, val, ttl)
 
 		}
-		fmt.Println(value)
 	}
 	return nil
 }

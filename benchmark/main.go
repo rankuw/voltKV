@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	concurrency = flag.Int("c", 100, "concurrency level")
-	total       = flag.Int("f", 40000, "total number of requests")
+	concurrency = flag.Int("c", 200, "concurrency level")
+	total       = flag.Int("f", 100000, "total number of requests")
 )
 
 func main() {
@@ -53,7 +53,6 @@ func main() {
 			dataBytes := data.Marshal()
 
 			for j := 0; j < requestPerClient; j++ {
-				fmt.Println("Sending new request ")
 				start := time.Now()
 				if _, err := conn.Write(dataBytes); err != nil {
 					fmt.Println("Error in write ", err)
@@ -65,8 +64,6 @@ func main() {
 				if err != nil {
 					fmt.Println("Read error:", err)
 					return
-				} else {
-					fmt.Println("fine")
 				}
 
 				latency <- time.Since(start)

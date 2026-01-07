@@ -2,7 +2,6 @@ package server
 
 import (
 	"fmt"
-	"io"
 	"net"
 	"strconv"
 	"time"
@@ -52,25 +51,14 @@ func (s *Server) handleConnection(conn net.Conn) {
 		data, err := respReader.Read()
 
 		if err != nil {
-			if err != io.EOF {
-				fmt.Println(err)
-			}
 			return
 		}
 
 		if data.Type != resp.ARRAY {
-			fmt.Println("Invalid request, exptected an array")
-			if err := writer.Write(resp.Value{Type: resp.ERROR, Str: "ERR request must be an ARRAY"}); err != nil {
-				fmt.Println(err)
-			}
 			return
 		}
 
 		if len(data.Array) == 0 {
-			fmt.Println("Invalid request, no arguments given")
-			if err := writer.Write(resp.Value{Type: resp.ERROR, Str: "ERR request must contains something"}); err != nil {
-				fmt.Println(err)
-			}
 			return
 		}
 
@@ -79,35 +67,25 @@ func (s *Server) handleConnection(conn net.Conn) {
 
 		switch command {
 		case "PING":
-			if err := writer.Write(resp.Value{Type: resp.STRING, Str: "PONG"}); err != nil {
-				fmt.Println(err)
-			}
+			writer.Write(resp.Value{Type: resp.STRING, Str: "PONG"})
 
 		case "GET":
 			if len(arugments) != 1 {
-				if err := writer.Write(resp.Value{Type: resp.ERROR, Str: "ERR wrong number of arugments for GET"}); err != nil {
-					fmt.Println(err)
-				}
+				writer.Write(resp.Value{Type: resp.ERROR, Str: "ERR wrong number of arugments for GET"})
 			}
 
 			key := arugments[0].Bulk
 			val, ok := s.store.Get(key)
 
 			if !ok {
-				if err := writer.Write(resp.Value{Type: resp.BULK, IsNull: true}); err != nil {
-					fmt.Println(err)
-				}
+				writer.Write(resp.Value{Type: resp.BULK, IsNull: true})
 			} else {
-				if err := writer.Write(resp.Value{Type: resp.BULK, Bulk: val}); err != nil {
-					fmt.Println(err)
-				}
+				writer.Write(resp.Value{Type: resp.BULK, Bulk: val})
 			}
 
 		case "SET":
 			if len(arugments) < 2 {
-				if err := writer.Write(resp.Value{Type: resp.ERROR, Str: "ERR wrong number of arugments for SET"}); err != nil {
-					fmt.Println(err)
-				}
+				writer.Write(resp.Value{Type: resp.ERROR, Str: "ERR wrong number of arugments for SET"})
 			}
 
 			key := arugments[0].Bulk
@@ -124,14 +102,10 @@ func (s *Server) handleConnection(conn net.Conn) {
 				continue
 			}
 			s.store.Set(key, val, ttl)
-			if err := writer.Write(resp.Value{Type: resp.STRING, Str: "OK"}); err != nil {
-				fmt.Println(err)
-			}
+			writer.Write(resp.Value{Type: resp.STRING, Str: "OK"})
 
 		default:
-			if err := writer.Write(resp.Value{Type: resp.ERROR, Str: "ERR unknown command " + command}); err != nil {
-				fmt.Println(err)
-			}
+			writer.Write(resp.Value{Type: resp.ERROR, Str: "ERR unknown command " + command})
 		}
 	}
 

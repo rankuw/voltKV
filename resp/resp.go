@@ -2,7 +2,6 @@ package resp
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"strconv"
 )
@@ -161,10 +160,7 @@ func NewWriter(w io.Writer) *Writer {
 }
 
 func (w *Writer) Write(v Value) error {
-	fmt.Println("Value received to write", v)
 	bytes := v.Marshal()
-	fmt.Println("marshaled bytes")
-	fmt.Println(string(bytes))
 	_, err := w.writer.Write(bytes)
 	return err
 }
