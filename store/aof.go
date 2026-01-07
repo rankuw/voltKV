@@ -3,7 +3,10 @@ package store
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -46,15 +49,62 @@ func (aof *Aof) Close() {
 }
 
 func (aof *Aof) Write(v resp.Value) error {
-	fmt.Println("I'm in write", v, aof)
 	aof.mu.Lock()
 	defer aof.mu.Unlock()
 
+	fmt.Println(v, "This the the value to write")
 	_, err := aof.file.Write(v.Marshal())
 
 	if err != nil {
 		return err
 	}
 
+	return nil
+}
+
+func (aof *Aof) LoadData(kv *Store) error {
+	aof.mu.Lock()
+	defer aof.mu.Unlock()
+
+	aof.file.Seek(0, 0)
+	reader := resp.NewResp(aof.file)
+	for {
+		value, err := reader.Read()
+
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+
+		fmt.Println(value, "This is the value")
+		command := strings.ToUpper(value.Array[0].Bulk)
+		args := value.Array[1:]
+
+		if command == "SET" {
+			key := args[0].Bulk
+			val := args[1].Bulk
+			var ttl time.Duration
+
+			if len(args) > 2 {
+				for i := 2; i < len(args); i++ {
+					arg := strings.ToUpper(args[i].Bulk)
+					if arg == "EX" {
+						if i+1 < len(args) {
+							seconds, err := strconv.Atoi(args[i+1].Bulk)
+							if err == nil {
+								ttl = time.Duration(seconds) * time.Second
+							}
+						}
+						i++
+					}
+				}
+			}
+			kv.Set(key, val, ttl)
+
+		}
+		fmt.Println(value)
+	}
 	return nil
 }

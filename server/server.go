@@ -82,7 +82,6 @@ func (s *Server) handleConnection(conn net.Conn) {
 			if err := writer.Write(resp.Value{Type: resp.STRING, Str: "PONG"}); err != nil {
 				fmt.Println(err)
 			}
-			return
 
 		case "GET":
 			if len(arugments) != 1 {
@@ -103,8 +102,6 @@ func (s *Server) handleConnection(conn net.Conn) {
 					fmt.Println(err)
 				}
 			}
-
-			return
 
 		case "SET":
 			if len(arugments) < 2 {
@@ -130,7 +127,6 @@ func (s *Server) handleConnection(conn net.Conn) {
 			if err := writer.Write(resp.Value{Type: resp.STRING, Str: "OK"}); err != nil {
 				fmt.Println(err)
 			}
-			return
 
 		default:
 			if err := writer.Write(resp.Value{Type: resp.ERROR, Str: "ERR unknown command " + command}); err != nil {

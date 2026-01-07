@@ -16,9 +16,12 @@ func main() {
 		return
 	}
 	defer aof.Close()
+
+	aof.LoadData(kv)
+
 	server := server.NewServer(kv, aof)
 
-	if err := server.ListenAndServe(":8080"); err != nil {
+	if err := server.ListenAndServe(":8081"); err != nil {
 		fmt.Println("Error starting server:", err)
 	}
 }
